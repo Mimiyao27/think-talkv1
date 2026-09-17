@@ -13,92 +13,77 @@ export default async function PracticePage() {
     redirect("/login");
   }
 
-  // A mix of fill-in-the-blank and open-ended exercises
+  // Guided fill-in-the-blank exercises with an open question prompt
   const exercises: Exercise[] = [
     {
       id: "001",
-      question: "Hi, everyone! I'm _______, but you can call me _______. I'm ___ years old and I'm from _______. My hobbies are _______, _______, and _______. My favorite subject is _______ because _______. Nice to meet you all!",
+      question: "What is your favorite food?\n\nMy favorite food is __________ because I enjoy it when __________.",
       difficulty: "beginner",
       gradeLevel: 7,
-      category: "Introductions",
+      category: "Food",
       type: "fill-in-the-blank"
     },
     {
       id: "002",
-      question: "Yesterday, I went to the ______ with my friends.",
+      question: "What is your favorite drink?\n\nMy favorite drink is __________ because __________.",
+      difficulty: "beginner",
+      gradeLevel: 7,
+      category: "Food",
+      type: "fill-in-the-blank"
+    },
+    {
+      id: "003",
+      question: "What do you enjoy doing after school?\n\nAfter school, I usually __________ because it helps me __________.",
       difficulty: "beginner",
       gradeLevel: 7,
       category: "Daily Activities",
       type: "fill-in-the-blank"
     },
     {
-      id: "003",
-      question: "What did you do last weekend?",
-      difficulty: "intermediate",
-      gradeLevel: 7,
-      category: "Free Time",
-      type: "open-ended"
-    },
-    {
       id: "004",
-      question: "What is your favorite subject in school and why?",
+      question: "What makes you happy?\n\nI feel happy when __________ because __________.",
       difficulty: "beginner",
       gradeLevel: 7,
-      category: "School",
-      type: "open-ended"
+      category: "Feelings",
+      type: "fill-in-the-blank"
     },
     {
       id: "005",
-      question: "If you had a free day, what would you do?",
-      difficulty: "advanced",
-      gradeLevel: 7,
-      category: "Imagination",
-      type: "open-ended"
-    },
-    {
-      id: "006",
-      question: "Describe your best friend.",
-      difficulty: "beginner",
-      gradeLevel: 7,
-      category: "Friends",
-      type: "open-ended"
-    },
-    {
-      id: "007",
-      question: "What do you usually do after school?",
-      difficulty: "intermediate",
-      gradeLevel: 7,
-      category: "Daily Activities",
-      type: "open-ended"
-    },
-    {
-      id: "008",
-      question: "What place would you like to visit and why?",
-      difficulty: "intermediate",
-      gradeLevel: 7,
-      category: "Travel",
-      type: "open-ended"
-    },
-    {
-      id: "009",
-      question: "What is your favorite food?",
-      difficulty: "beginner",
-      gradeLevel: 7,
-      category: "Food",
-      type: "open-ended"
-    },
-    {
-      id: "010",
-      question: "Describe your classroom.",
+      question: "What is your favorite subject?\n\nMy favorite subject is __________ because I want to learn more about __________.",
       difficulty: "beginner",
       gradeLevel: 7,
       category: "School",
-      type: "open-ended"
-    }
+      type: "fill-in-the-blank"
+    },
+    {
+      id: "006",
+      question: "What is something you would like to improve?\n\nI would like to improve my __________ because __________. I can practice by __________.",
+      difficulty: "intermediate",
+      gradeLevel: 7,
+      category: "Goals",
+      type: "fill-in-the-blank"
+    },
+    {
+      id: "007",
+      question: "Who is your favorite person to talk to?\n\nMy favorite person to talk to is __________ because __________.",
+      difficulty: "beginner",
+      gradeLevel: 7,
+      category: "Relationships",
+      type: "fill-in-the-blank"
+    },
+    {
+      id: "008",
+      question: "What is something you would like to learn?\n\nI would like to learn how to __________ because __________.",
+      difficulty: "intermediate",
+      gradeLevel: 7,
+      category: "Goals",
+      type: "fill-in-the-blank"
+    },
   ];
 
   // Pick a random exercise
   const sampleExercise = exercises[Math.floor(Math.random() * exercises.length)];
+
 
   return (
     <main className="min-h-screen bg-white flex flex-col pt-12 pb-24">
