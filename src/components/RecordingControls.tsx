@@ -17,7 +17,7 @@ export default function RecordingControls({ onCancel, onSave }: RecordingControl
         >
           <X size={48} strokeWidth={3} />
         </button>
-        <p className="font-bold text-sm uppercase tracking-wide">Cancel</p>
+        <p className="font-bold text-sm uppercase tracking-wide text-gray-900">Cancel</p>
       </div>
 
       <div className="flex flex-col items-center gap-2">
@@ -31,7 +31,7 @@ export default function RecordingControls({ onCancel, onSave }: RecordingControl
              <div className="w-1 h-6 bg-white rounded-full animate-bounce" style={{ animationDelay: "600ms" }}></div>
            </div>
         </div>
-        <p className="font-bold text-sm uppercase tracking-wide">Recording...</p>
+        <p className="font-bold text-sm uppercase tracking-wide text-gray-900">Recording...</p>
       </div>
 
       <div className="flex flex-col items-center gap-2">
@@ -42,7 +42,7 @@ export default function RecordingControls({ onCancel, onSave }: RecordingControl
         >
           <Check size={48} strokeWidth={3} />
         </button>
-        <p className="font-bold text-sm uppercase tracking-wide">Save</p>
+        <p className="font-bold text-sm uppercase tracking-wide text-gray-900">Save</p>
       </div>
     </div>
   );

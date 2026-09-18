@@ -17,7 +17,7 @@ export default function MicrophoneButton({ onClick, disabled }: MicrophoneButton
       >
         <Mic size={48} strokeWidth={2.5} />
       </button>
-      <p className="font-bold text-sm uppercase tracking-wide">
+      <p className="font-bold text-sm uppercase tracking-wide text-gray-900">
         Click the mic and start to speak
       </p>
     </div>
