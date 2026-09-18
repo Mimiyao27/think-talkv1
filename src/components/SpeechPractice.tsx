@@ -45,14 +45,17 @@ export default function SpeechPractice({ exercise }: SpeechPracticeProps) {
   const handleStartRecording = async () => {
     setError(null);
     try {
-      // Ensure Puter sign-in happens NOW (on a user gesture) so the
-      // auth popup doesn't interrupt the user mid-recording when Save is clicked.
-      const loggedIn = await puter.auth.isLoggedIn();
-      if (!loggedIn) {
+      // Request microphone FIRST while the user gesture is still fresh.
+      // Browsers invalidate the gesture context after a popup (like puter.auth.signIn),
+      // so getUserMedia must be called before any popup-based auth flow.
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Now check Puter auth. If the user isn't signed in, signIn() opens a popup.
+      // At this point we already hold the mic stream, so the gesture context doesn't matter.
+      // isSignedIn() is synchronous — no await needed.
+      if (!puter.auth.isSignedIn()) {
         await puter.auth.signIn();
       }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
