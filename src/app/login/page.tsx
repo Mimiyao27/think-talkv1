@@ -32,17 +32,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <div className="min-h-screen bg-[#efebc4] flex items-center justify-center p-4">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border-[4px] border-black">
-        <h1 className="text-3xl font-black text-center mb-2 tracking-tight">ThinkTalk</h1>
+        <h1 className="text-3xl font-red text-center mb-2 tracking-tight">ThinkTalk</h1>
         <p className="text-center text-gray-500 mb-8 font-medium">Log in to continue your practice</p>
 
         {/* Error / Warning Banner */}
         {errorInfo && (
           <div
-            className={`flex items-start gap-3 rounded-xl px-4 py-3 mb-6 border-2 text-sm font-medium ${
-              errorInfo.type === 'warning'
-                ? 'bg-yellow-50 border-yellow-400 text-yellow-800'
-                : 'bg-red-50 border-red-400 text-red-700'
-            }`}
+            className={`flex items-start gap-3 rounded-xl px-4 py-3 mb-6 border-2 text-sm font-medium ${errorInfo.type === 'warning'
+              ? 'bg-yellow-50 border-yellow-400 text-yellow-800'
+              : 'bg-red-50 border-red-400 text-red-700'
+              }`}
           >
             <span className="text-lg leading-none mt-0.5">
               {errorInfo.type === 'warning' ? '⚠️' : '❌'}
