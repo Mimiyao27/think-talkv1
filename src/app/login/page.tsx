@@ -32,7 +32,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <div className="min-h-screen bg-[#efebc4] flex items-center justify-center p-4">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border-[4px] border-black">
-        <h1 className="text-3xl font-red text-center mb-2 tracking-tight">ThinkTalk</h1>
+        <h1 className="text-3xl text-red-700 font-black text-center mb-2 tracking-tight">ThinkTalk</h1>
         <p className="text-center text-gray-500 mb-8 font-medium">Log in to continue your practice</p>
 
         {/* Error / Warning Banner */}
@@ -59,7 +59,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               type="email"
               required
               autoComplete="email"
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 text-gray-700 focus:border-blue-500 focus:outline-none transition-colors"
               placeholder="student@example.com"
             />
           </div>
@@ -72,7 +72,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               required
               autoComplete="current-password"
               minLength={6}
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 text-gray-700 focus:border-blue-500 focus:outline-none transition-colors"
               placeholder="••••••••"
             />
             <p className="text-xs text-gray-400 mt-1 ml-1">Minimum 6 characters</p>
