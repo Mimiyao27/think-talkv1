@@ -60,7 +60,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               required
               autoComplete="email"
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 text-gray-700 focus:border-blue-500 focus:outline-none transition-colors"
-              placeholder="student@example.com"
+              placeholder="juandelacruz@gmail.com"
             />
           </div>
           <div>
