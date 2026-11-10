@@ -1,24 +1,10 @@
-import puter from "@heyputer/puter.js";
+/**
+ * speech.ts
+ * Speech-to-text is now handled directly in SpeechPractice.tsx
+ * via the AssemblyAI real-time WebSocket API.
+ *
+ * This file is kept as a placeholder in case a batch/file-based
+ * STT fallback is needed in the future.
+ */
 
-export async function convertSpeechToText(audioBlob: Blob): Promise<string> {
-  try {
-    // According to Puter.js documentation, speech2txt takes an audio blob or URL.
-    const result = await puter.ai.speech2txt(audioBlob, {
-      language: "en",
-      response_format: "text"
-    });
-    
-    // Puter's speech2txt typically returns a string if response_format is "text",
-    // or an object { text: string } if json. We handle both just in case.
-    if (typeof result === "string") {
-      return result;
-    } else if (result && typeof result === "object" && "text" in result) {
-      return (result as { text: string }).text;
-    }
-    
-    return "Could not parse transcript from result.";
-  } catch (error) {
-    console.error("Speech-to-text error:", error);
-    throw new Error("We couldn't understand the recording. Please try again.");
-  }
-}
+export {}; // keep TypeScript happy as an empty module

@@ -13,10 +13,11 @@
 | React 19 | UI |
 | TypeScript | Type Safety |
 | Tailwind CSS v4 | Styling |
-| Puter.js (`@heyputer/puter.js`) | Speech-to-Text + AI Evaluation |
+| AssemblyAI (`assemblyai`) | Real-time Speech-to-Text (WebSocket streaming) |
+| Google Gemini 2.0 Flash (`@google/generative-ai`) | AI Evaluation (free tier, server-side) |
 | Supabase (`@supabase/supabase-js`, `@supabase/ssr`) | Database + Authentication |
 | `lucide-react` | Icons |
-| Browser MediaRecorder API | Microphone recording |
+| Browser MediaRecorder API + Web Audio API | Microphone recording + PCM16 audio streaming |
 
 ---
 
@@ -37,15 +38,19 @@ Click "Start Practice"
     ↓
 Click mic button → Browser requests microphone permission
     ↓
-Recording state (Cancel | Recording... | Save)
+Fetches temporary token from /api/assemblyai-token
     ↓
-Click Save → Audio Blob captured
+Opens WebSocket to AssemblyAI real-time API (wss://api.assemblyai.com/v2/realtime/ws)
+    ↓
+Recording state — streams PCM16 audio at 16 kHz via Web Audio API
+    ↓
+Live transcript appears (partial → final segments)
+    ↓
+Click Save → Audio streaming stops → AssemblyAI flushes last transcript
     ↓
 Processing state (spinner)
     ↓
-Puter.js → speech2txt → Transcript
-    ↓
-Puter AI → evaluateResponse → JSON Evaluation
+POST /api/evaluate → Gemini 2.0 Flash → JSON Evaluation
     ↓
 Result card (Your Answer, Grammar, Meaning, Completeness, Relevance, Score, Feedback)
     ↓
@@ -104,6 +109,45 @@ Click "Try Another Exercise" → reload → new random exercise
 - Open-ended: evaluates clarity, grammar, relevance, completeness (no fixed answer comparison)
 - Fill-in-the-blank: allows multiple valid answers, ignores exact word matching
 
+### ✅ Stage 8 — AssemblyAI Real-Time STT + Gemini Evaluation
+**Date:** November 9, 2026
+
+Replaced Puter.js (client-side, browser global) with a proper **server-side architecture** using **AssemblyAI** for speech-to-text and **Google Gemini 2.0 Flash** (free tier) for AI evaluation.
+
+#### Speech-to-Text: AssemblyAI Streaming v3 WebSocket
+- Created `GET /api/assemblyai-token` route (`src/app/api/assemblyai-token/route.ts`)
+  - Auth-gated: checks Supabase session before issuing token
+  - Calls AssemblyAI Streaming v3 token endpoint (`https://streaming.assemblyai.com/v3/token?expires_in_seconds=480`)
+  - Keeps `ASSEMBLYAI_API_KEY` server-side only
+- Updated `SpeechPractice.tsx` to use **AssemblyAI Streaming v3 WebSocket**:
+  - Opens WebSocket to `wss://streaming.assemblyai.com/v3/ws?sample_rate=16000&token=...`
+  - Captures microphone via `getUserMedia` + `AudioContext` (16 kHz sample rate)
+  - Streams PCM16 audio via `ScriptProcessorNode`
+  - Handles v3 `Turn` events (`transcript`, `end_of_turn: false` for partial ghost text, `end_of_turn: true` for final committed segments)
+  - Sends `{ type: "Terminate" }` on cleanup to gracefully close session
+- `src/lib/speech.ts` is now an empty placeholder (kept for potential future batch STT fallback)
+
+#### AI Evaluation: Google Gemini 2.0 Flash (Free Tier)
+- Installed `@google/generative-ai` package
+- Created `POST /api/evaluate` route (`src/app/api/evaluate/route.ts`)
+  - Receives `{ transcript, exerciseQuestion, exerciseType }` from client
+  - Builds the same evaluation prompt (Grammar, Meaning, Completeness, Relevance)
+  - Calls Gemini 2.0 Flash via `GoogleGenerativeAI` SDK
+  - Parses and returns structured JSON evaluation
+  - Keeps `GEMINI_API_KEY` server-side only
+- Updated `src/lib/ai-evaluation.ts` — now calls `POST /api/evaluate` via `fetch()` instead of `puter.ai.chat()`
+
+#### Cleanup
+- Removed Puter.js `<script>` tag from `layout.tsx`
+- Uninstalled `@heyputer/puter.js` package
+- Added `GEMINI_API_KEY` to `.env.local`
+
+#### Why This Change?
+- **Security**: API keys are now server-side only (not exposed in the browser)
+- **Reliability**: AssemblyAI provides higher-quality, real-time transcription with live feedback
+- **Cost**: Gemini 2.0 Flash is free tier with generous limits
+- **UX**: Students see their words appearing live as they speak (partial transcripts)
+
 ---
 
 ## Final Exercise Pool (10 total)
@@ -132,6 +176,7 @@ thinktalk/
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx                      ← Redirects to /dashboard
+│   │   ├── layout.tsx                    ← Root layout (no Puter.js script)
 │   │   ├── login/
 │   │   │   ├── page.tsx                  ← Login/Signup UI
 │   │   │   └── actions.ts                ← login(), signup(), signout()
@@ -139,15 +184,20 @@ thinktalk/
 │   │   │   └── page.tsx                  ← Student dashboard with real stats
 │   │   ├── practice/
 │   │   │   └── page.tsx                  ← Random exercise + SpeechPractice
+│   │   ├── api/
+│   │   │   ├── assemblyai-token/
+│   │   │   │   └── route.ts             ← GET: issues short-lived AssemblyAI tokens
+│   │   │   └── evaluate/
+│   │   │       └── route.ts             ← POST: Gemini 2.0 Flash AI evaluation
 │   │   └── actions/
 │   │       └── save-attempt.ts           ← Server Action: saves to Supabase
 │   ├── components/
-│   │   ├── SpeechPractice.tsx            ← Main recording + evaluation flow
+│   │   ├── SpeechPractice.tsx            ← Main recording + evaluation flow (AssemblyAI WebSocket)
 │   │   ├── MicrophoneButton.tsx          ← Blue mic button (idle state)
 │   │   └── RecordingControls.tsx         ← Cancel | Recording... | Save
 │   ├── lib/
-│   │   ├── speech.ts                     ← Puter.js speech-to-text
-│   │   ├── ai-evaluation.ts              ← Puter AI evaluation
+│   │   ├── speech.ts                     ← Empty placeholder (STT handled in SpeechPractice)
+│   │   ├── ai-evaluation.ts              ← Calls POST /api/evaluate (Gemini)
 │   │   └── supabase.ts                   ← Basic Supabase client (browser)
 │   ├── types/
 │   │   ├── student.ts                    ← RecordingState type
@@ -157,7 +207,7 @@ thinktalk/
 │       └── supabase/
 │           ├── server.ts                 ← SSR server client (cookies)
 │           └── client.ts                 ← SSR browser client
-└── .env.local                            ← Your Supabase keys (keep secret!)
+└── .env.local                            ← Your API keys (keep secret!)
 ```
 
 ---
@@ -170,18 +220,36 @@ Create a `.env.local` file in the project root:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+ASSEMBLYAI_API_KEY=your_assemblyai_api_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 > ⚠️ NEVER commit `.env.local` to GitHub. It is already in `.gitignore`.
+
+### Getting API Keys
+- **Supabase**: [supabase.com/dashboard](https://supabase.com/dashboard/projects) → Project Settings → API
+- **AssemblyAI**: [assemblyai.com/dashboard](https://www.assemblyai.com/dashboard) → API Keys
+- **Gemini**: [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (free tier)
 
 ---
 
 ## Key Bug Fixes
 
-### `ai-evaluation.ts` Fix
+### `ai-evaluation.ts` Fix (Stage 3)
 - **Problem:** `import puter from "@heyputer/puter.js"` caused a TypeScript error because Puter.js is a **browser global**, not an ES module.
 - **Fix:** Replaced with `declare const puter: any` and removed the import entirely.
 - **Also fixed:** Nested backtick template literals that caused a syntax parse error. Prompt rebuilt as a `string[]` joined with `\n`.
+
+### AssemblyAI Temporary Token 404 Fix (Stage 8)
+- **Problem:** Clicking the microphone showed "Failed to create token". Calling `https://api.assemblyai.com/v2/realtime/token` returned a `404 Not Found` because AssemblyAI deprecated the legacy v2 temporary token endpoint.
+- **Fix:** Switched to AssemblyAI Streaming v3:
+  - Token endpoint: `GET https://streaming.assemblyai.com/v3/token?expires_in_seconds=480`
+  - WebSocket URL: `wss://streaming.assemblyai.com/v3/ws?sample_rate=16000&token=${token}`
+  - Updated event handler to support v3 `Turn` events (`transcript`, `end_of_turn`), preserving any active partial transcript on save.
+
+### Gemini 404 Evaluation Model Fix (Stage 8)
+- **Problem:** Clicking Save triggered `"We couldn't evaluate your answer right now. Your transcript has been preserved. Please try again later."` Calling `gemini-2.0-flash` returned `404 Not Found` because Google retired that model name for new requests.
+- **Fix:** Updated `src/app/api/evaluate/route.ts` to use `gemini-flash-latest` (with automatic fallback to `gemini-flash-lite-latest`) and configured `responseMimeType: "application/json"` for guaranteed valid structured evaluation JSON.
 
 ---
 

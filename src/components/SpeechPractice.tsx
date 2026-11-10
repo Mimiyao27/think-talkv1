@@ -6,12 +6,8 @@ import { Exercise } from "@/types/exercise";
 import { EvaluationResult } from "@/types/evaluation";
 import MicrophoneButton from "./MicrophoneButton";
 import RecordingControls from "./RecordingControls";
-import { convertSpeechToText } from "@/lib/speech";
 import { evaluateResponse } from "@/lib/ai-evaluation";
 import { saveAttemptToDatabase } from "@/app/actions/save-attempt";
-
-// Puter.js is loaded as a global script — not a module import
-declare const puter: any;
 
 interface SpeechPracticeProps {
   exercise: Exercise;
@@ -21,97 +17,205 @@ export default function SpeechPractice({ exercise }: SpeechPracticeProps) {
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string>("");
+  const [liveTranscript, setLiveTranscript] = useState<string>("");
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<BlobPart[]>([]);
+  // Refs for audio streaming resources
+  const wsRef = useRef<WebSocket | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  // Accumulates all final transcript segments during one recording session
+  const finalTranscriptRef = useRef<string>("");
+  const liveTranscriptRef = useRef<string>("");
 
-  // Cleanup on unmount
+  // Cleanup all audio + WebSocket on unmount
   useEffect(() => {
     return () => {
-      stopMicrophone();
+      cleanupAudio();
     };
   }, []);
 
-  const stopMicrophone = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
+  const cleanupAudio = () => {
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
     }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.stream) {
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (wsRef.current) {
+      // Send terminate message so AssemblyAI flushes any remaining audio
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: "Terminate" }));
+      }
+      wsRef.current.close();
+      wsRef.current = null;
     }
   };
 
   const handleStartRecording = async () => {
     setError(null);
+    setLiveTranscript("");
+    setTranscript("");
+    finalTranscriptRef.current = "";
+    liveTranscriptRef.current = "";
+
     try {
-      // Request microphone FIRST while the user gesture is still fresh.
-      // Browsers invalidate the gesture context after a popup (like puter.auth.signIn),
-      // so getUserMedia must be called before any popup-based auth flow.
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      // Now check Puter auth. If the user isn't signed in, signIn() opens a popup.
-      // At this point we already hold the mic stream, so the gesture context doesn't matter.
-      // isSignedIn() is synchronous — no await needed.
-      if (!puter.auth.isSignedIn()) {
-        await puter.auth.signIn();
+      // 1. Get a short-lived token from our Next.js server (keeps API key secret)
+      const tokenRes = await fetch("/api/assemblyai-token");
+      if (!tokenRes.ok) {
+        const err = await tokenRes.json().catch(() => ({}));
+        throw new Error(err.error || "Could not get transcription token");
       }
+      const { token } = await tokenRes.json();
 
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
+      // 2. Connect to AssemblyAI Streaming v3 WebSocket
+      const ws = new WebSocket(
+        `wss://streaming.assemblyai.com/v3/ws?sample_rate=16000&token=${token}`
+      );
+      wsRef.current = ws;
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data as string);
+
+          // Streaming v3 Turn event
+          if (msg.type === "Turn" || typeof msg.transcript === "string") {
+            const turnText = (msg.transcript || "").trim();
+            if (msg.end_of_turn) {
+              if (turnText) {
+                finalTranscriptRef.current = (
+                  finalTranscriptRef.current + " " + turnText
+                ).trim();
+                setTranscript(finalTranscriptRef.current);
+              }
+              liveTranscriptRef.current = "";
+              setLiveTranscript("");
+            } else {
+              liveTranscriptRef.current = turnText;
+              setLiveTranscript(turnText);
+            }
+          } else if (msg.message_type === "PartialTranscript") {
+            // Fallback for legacy messages
+            liveTranscriptRef.current = msg.text || "";
+            setLiveTranscript(msg.text || "");
+          } else if (msg.message_type === "FinalTranscript" && msg.text) {
+            finalTranscriptRef.current = (
+              finalTranscriptRef.current + " " + msg.text
+            ).trim();
+            setTranscript(finalTranscriptRef.current);
+            liveTranscriptRef.current = "";
+            setLiveTranscript("");
+          }
+        } catch (e) {
+          console.error("Error parsing WebSocket message:", e);
         }
       };
 
-      mediaRecorder.onstop = () => {
-        // Blob creation happens when stopping the recorder.
-        // The save handler will process it.
+      ws.onerror = () => {
+        setError("Real-time transcription connection failed. Please try again.");
+        setRecordingState("idle");
+        cleanupAudio();
       };
 
-      mediaRecorder.start();
+      ws.onclose = () => {
+        // If we're still recording when the socket closes unexpectedly, reset
+        setRecordingState((prev) => {
+          if (prev === "recording") {
+            setError("Connection closed unexpectedly. Please try again.");
+            return "idle";
+          }
+          return prev;
+        });
+      };
+
+      // 3. Wait for WebSocket to open, then start mic
+      await new Promise<void>((resolve, reject) => {
+        ws.onopen = () => resolve();
+        ws.onerror = () => reject(new Error("WebSocket failed to open"));
+        // 5s timeout
+        setTimeout(() => reject(new Error("WebSocket connection timed out")), 5000);
+      });
+
+      // 4. Request microphone & start streaming PCM16 at 16 kHz
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = audioContext;
+
+      const source = audioContext.createMediaStreamSource(stream);
+      // ScriptProcessorNode: 4096 samples, 1 input channel, 1 output channel
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+
+      processor.onaudioprocess = (e) => {
+        if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+        const float32 = e.inputBuffer.getChannelData(0);
+        // Convert Float32 → Int16 PCM
+        const pcm16 = new Int16Array(float32.length);
+        for (let i = 0; i < float32.length; i++) {
+          pcm16[i] = Math.max(-32768, Math.min(32767, float32[i] * 32768));
+        }
+        wsRef.current.send(pcm16.buffer);
+      };
+
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+
       setRecordingState("recording");
-    } catch (err) {
-      console.error("Error accessing microphone:", err);
-      setError("We couldn't access your microphone. Please allow microphone permission and try again.");
+    } catch (err: any) {
+      console.error("Error starting recording:", err);
+      setError(
+        err.message ||
+          "We couldn't start recording. Please check your microphone and try again."
+      );
+      cleanupAudio();
     }
   };
 
   const handleCancelRecording = () => {
-    stopMicrophone();
-    audioChunksRef.current = [];
+    cleanupAudio();
+    setLiveTranscript("");
     setTranscript("");
     setEvaluation(null);
+    finalTranscriptRef.current = "";
+    liveTranscriptRef.current = "";
     setRecordingState("idle");
   };
 
   const handleSaveRecording = async () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      setRecordingState("processing");
+    setRecordingState("processing");
 
-      // Wait for the onstop event to finish pushing the last chunk
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        processAudio(audioBlob);
-      };
+    // Stop audio streaming first; AssemblyAI will flush remaining audio
+    cleanupAudio();
 
-      stopMicrophone();
+    // Give AssemblyAI ~800ms to deliver the last transcript before we proceed
+    await new Promise((r) => setTimeout(r, 800));
+
+    let finalText = finalTranscriptRef.current.trim();
+    if (liveTranscriptRef.current && !finalText.endsWith(liveTranscriptRef.current.trim())) {
+      finalText = (finalText + " " + liveTranscriptRef.current).trim();
     }
-  };
 
-  const processAudio = async (audioBlob: Blob) => {
+    if (!finalText) {
+      setError("No speech was detected. Please try again.");
+      setRecordingState("idle");
+      return;
+    }
+
     try {
-      const text = await convertSpeechToText(audioBlob);
-      setTranscript(text);
-
-      const evalResult = await evaluateResponse(exercise, text);
+      const evalResult = await evaluateResponse(exercise, finalText);
       setEvaluation(evalResult);
+      setTranscript(finalText);
 
-      // Stage 5: Save to Supabase (this runs securely on the server)
-      await saveAttemptToDatabase(exercise, text, evalResult);
+      await saveAttemptToDatabase(exercise, finalText, evalResult);
 
       setRecordingState("result");
     } catch (err: any) {
@@ -123,20 +227,21 @@ export default function SpeechPractice({ exercise }: SpeechPracticeProps) {
 
   const handleTryAgain = () => {
     setTranscript("");
+    setLiveTranscript("");
     setEvaluation(null);
+    finalTranscriptRef.current = "";
+    liveTranscriptRef.current = "";
     setRecordingState("idle");
   };
 
   const handleNextExercise = () => {
-    // Simply reload the page to get a new random exercise from the server
     window.location.reload();
   };
 
-  // Border styling logic based on the user's design images
   const containerBorderClass =
     recordingState === "recording"
-      ? "border-4 border-[#8e24aa]" // Purple border for recording
-      : "border-[6px] border-black"; // Thick black border for idle/other states
+      ? "border-4 border-[#8e24aa]"
+      : "border-[6px] border-black";
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 flex flex-col items-center">
@@ -149,6 +254,24 @@ export default function SpeechPractice({ exercise }: SpeechPracticeProps) {
           {exercise.question}
         </p>
       </div>
+
+      {/* Live transcript while recording */}
+      {recordingState === "recording" && (
+        <div className="w-full mt-4 p-4 bg-white rounded-xl border-2 border-purple-200 min-h-[60px]">
+          <p className="text-sm font-bold text-purple-500 uppercase tracking-wider mb-1">
+            Live Transcript
+          </p>
+          <p className="text-gray-700 italic">
+            {transcript && <span className="text-gray-900">{transcript} </span>}
+            {liveTranscript && (
+              <span className="text-purple-400">{liveTranscript}</span>
+            )}
+            {!transcript && !liveTranscript && (
+              <span className="text-gray-400">Start speaking…</span>
+            )}
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-lg text-center w-full">
@@ -172,8 +295,8 @@ export default function SpeechPractice({ exercise }: SpeechPracticeProps) {
         {recordingState === "processing" && (
           <div className="flex flex-col items-center gap-4 mt-8">
             <div className="w-12 h-12 border-4 border-[#3baded] border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-lg font-medium text-gray-700">Processing your answer...</p>
-            <p className="text-sm text-gray-500">Converting your speech to text.</p>
+            <p className="text-lg font-medium text-gray-700">Evaluating your answer...</p>
+            <p className="text-sm text-gray-500">Almost done!</p>
           </div>
         )}
 
