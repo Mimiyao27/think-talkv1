@@ -6,11 +6,18 @@ export async function proxy(request: NextRequest) {
     request,
   })
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseUrl = (
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL
+  )?.trim().replace(/^["']|["']$/g, "").replace(/\/$/, "");
 
-  // If Supabase environment variables are missing (e.g. initial Vercel deploy), don't crash
-  if (!supabaseUrl || !supabaseAnonKey) {
+  const supabaseAnonKey = (
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY
+  )?.trim().replace(/^["']|["']$/g, "");
+
+  // If Supabase environment variables are missing or placeholders, don't crash
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes("your-project.supabase.co") || supabaseUrl.includes("example.com")) {
     return supabaseResponse
   }
 

@@ -35,7 +35,10 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const apiKey = process.env.ASSEMBLYAI_API_KEY;
+  const apiKey = (
+    process.env.ASSEMBLYAI_API_KEY ||
+    process.env.ASSEMBLY_AI_API_KEY
+  )?.trim().replace(/^["']|["']$/g, "");
   if (!apiKey) {
     return NextResponse.json(
       { error: "AssemblyAI API key not configured in environment variables" },

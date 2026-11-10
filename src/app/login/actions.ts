@@ -21,6 +21,9 @@ export async function login(formData: FormData) {
     const { error } = await supabase.auth.signInWithPassword(data)
 
     if (error) {
+      if (error.message.toLowerCase().includes('fetch failed')) {
+        redirect('/login?error=supabase_connection_failed')
+      }
       // Supabase returns "Invalid login credentials" for wrong password OR unknown email
       if (error.message.toLowerCase().includes('invalid login credentials') ||
           error.message.toLowerCase().includes('invalid credentials')) {
@@ -30,6 +33,9 @@ export async function login(formData: FormData) {
     }
   } catch (err: any) {
     if (err?.message?.includes('NEXT_REDIRECT')) throw err
+    if (err?.message?.toLowerCase().includes('fetch failed')) {
+      redirect('/login?error=supabase_connection_failed')
+    }
     redirect(`/login?error=${encodeURIComponent(err?.message || 'Authentication failed')}`)
   }
 
@@ -57,6 +63,9 @@ export async function signup(formData: FormData) {
     const { data, error } = await supabase.auth.signUp({ email, password })
 
     if (error) {
+      if (error.message.toLowerCase().includes('fetch failed')) {
+        redirect('/login?error=supabase_connection_failed')
+      }
       // Supabase returns this when the email is already registered
       if (error.message.toLowerCase().includes('already registered') ||
           error.message.toLowerCase().includes('user already registered')) {
@@ -72,6 +81,9 @@ export async function signup(formData: FormData) {
     }
   } catch (err: any) {
     if (err?.message?.includes('NEXT_REDIRECT')) throw err
+    if (err?.message?.toLowerCase().includes('fetch failed')) {
+      redirect('/login?error=supabase_connection_failed')
+    }
     redirect(`/login?error=${encodeURIComponent(err?.message || 'Sign up failed')}`)
   }
 

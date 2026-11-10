@@ -14,6 +14,10 @@ const ERROR_MESSAGES: Record<string, { text: string; type: 'error' | 'warning' }
     text: 'Password must be at least 6 characters long.',
     type: 'error',
   },
+  supabase_connection_failed: {
+    text: 'Could not connect to Supabase database. Please check your NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel Environment Variables, ensure there are no trailing slashes, and make sure your Supabase project is active.',
+    type: 'error',
+  },
 }
 
 interface LoginPageProps {

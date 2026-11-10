@@ -7,7 +7,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
  * Expects JSON body: { transcript: string, exerciseQuestion: string, exerciseType: string }
  */
 export async function POST(request: Request) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_API_KEY
+  )?.trim().replace(/^["']|["']$/g, "");
   if (!apiKey) {
     return NextResponse.json(
       { error: "Gemini API key not configured" },
