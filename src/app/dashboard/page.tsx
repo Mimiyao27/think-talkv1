@@ -4,10 +4,18 @@ import Link from "next/link";
 import { signout } from "../login/actions";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  let supabase = null;
 
-  if (!user) {
+  try {
+    supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data?.user ?? null;
+  } catch {
+    redirect("/login");
+  }
+
+  if (!user || !supabase) {
     redirect("/login");
   }
 

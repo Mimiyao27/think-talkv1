@@ -7,11 +7,29 @@ import { createClient } from "@/utils/supabase/server";
  * Only authenticated users can get one (guarded by Supabase session check).
  */
 export async function GET() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.json(
+      { error: "Supabase environment variables not configured in this deployment" },
+      { status: 500 }
+    );
+  }
+
   // Ensure the user is logged in before minting a token
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data?.user ?? null;
+  } catch (err: any) {
+    console.error("Supabase user auth check error:", err?.message || err);
+    return NextResponse.json(
+      { error: "Failed to authenticate session with database" },
+      { status: 401 }
+    );
+  }
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,7 +38,7 @@ export async function GET() {
   const apiKey = process.env.ASSEMBLYAI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "AssemblyAI API key not configured" },
+      { error: "AssemblyAI API key not configured in environment variables" },
       { status: 500 }
     );
   }

@@ -6,9 +6,17 @@ export async function proxy(request: NextRequest) {
     request,
   })
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // If Supabase environment variables are missing (e.g. initial Vercel deploy), don't crash
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return supabaseResponse
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -29,8 +37,13 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired — required for Server Components
-  await supabase.auth.getUser()
+  try {
+    // Refresh session if expired — required for Server Components
+    await supabase.auth.getUser()
+  } catch (err) {
+    // Catch network / DNS / fetch errors so proxy doesn't crash the whole application
+    console.error('Supabase session refresh failed in proxy:', err)
+  }
 
   return supabaseResponse
 }

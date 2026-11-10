@@ -251,6 +251,35 @@ GEMINI_API_KEY=your_gemini_api_key
 - **Problem:** Clicking Save triggered `"We couldn't evaluate your answer right now. Your transcript has been preserved. Please try again later."` Calling `gemini-2.0-flash` returned `404 Not Found` because Google retired that model name for new requests.
 - **Fix:** Updated `src/app/api/evaluate/route.ts` to use `gemini-flash-latest` (with automatic fallback to `gemini-flash-lite-latest`) and configured `responseMimeType: "application/json"` for guaranteed valid structured evaluation JSON.
 
+### Vercel / GitHub "fetch failed" Fix (Stage 8)
+- **Problem:** When uploaded to GitHub and deployed to Vercel, pages or API routes threw `fetch failed` (500 error).
+- **Cause:**
+  1. `.env.local` is intentionally in `.gitignore` and is NOT committed to GitHub. On Vercel, all environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ASSEMBLYAI_API_KEY`, `GEMINI_API_KEY`) were missing by default.
+  2. `src/proxy.ts` (Next.js middleware) ran on every request and attempted `supabase.auth.getUser()` with `undefined` Supabase URL, causing Node.js native `fetch` to throw an unhandled `TypeError: fetch failed`.
+- **Fix:**
+  1. Made `src/proxy.ts` defensive: skips auth refresh if env vars are missing and catches errors gracefully.
+  2. Made `src/utils/supabase/server.ts` and `client.ts` validate env vars with clear descriptive error messages.
+  3. Added try/catch guards to Server Actions (`login`, `signup`, `saveAttemptToDatabase`) and protected routes (`/dashboard`, `/practice`).
+  4. Added `.env.example` to the repository.
+  5. Documented the required Vercel Environment Variables setup.
+
+---
+
+## Vercel Deployment Checklist
+
+When deploying to Vercel, you **must** add your environment variables in Vercel:
+
+1. Open your project dashboard at [vercel.com](https://vercel.com).
+2. Go to **Settings** → **Environment Variables**.
+3. Add the following 5 variables (copy values from your local `.env.local`):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ASSEMBLYAI_API_KEY`
+   - `GEMINI_API_KEY`
+4. Apply them to **Production**, **Preview**, and **Development**.
+5. Go to **Deployments** → click the three dots on your latest deployment → **Redeploy**.
+
 ---
 
 ## Supabase Setup Checklist

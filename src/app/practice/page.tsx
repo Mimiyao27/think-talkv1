@@ -6,8 +6,15 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export default async function PracticePage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data?.user ?? null;
+  } catch {
+    redirect("/login");
+  }
 
   if (!user) {
     redirect("/login");

@@ -5,22 +5,32 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
 export async function login(formData: FormData) {
-  const supabase = await createClient()
+  let supabase;
+  try {
+    supabase = await createClient()
+  } catch (err: any) {
+    redirect(`/login?error=${encodeURIComponent(err?.message || 'Database configuration error')}`)
+  }
 
   const data = {
     email: formData.get('email') as string,
     password: formData.get('password') as string,
   }
 
-  const { error } = await supabase.auth.signInWithPassword(data)
+  try {
+    const { error } = await supabase.auth.signInWithPassword(data)
 
-  if (error) {
-    // Supabase returns "Invalid login credentials" for wrong password OR unknown email
-    if (error.message.toLowerCase().includes('invalid login credentials') ||
-        error.message.toLowerCase().includes('invalid credentials')) {
-      redirect('/login?error=incorrect_password')
+    if (error) {
+      // Supabase returns "Invalid login credentials" for wrong password OR unknown email
+      if (error.message.toLowerCase().includes('invalid login credentials') ||
+          error.message.toLowerCase().includes('invalid credentials')) {
+        redirect('/login?error=incorrect_password')
+      }
+      redirect(`/login?error=${encodeURIComponent(error.message)}`)
     }
-    redirect(`/login?error=${encodeURIComponent(error.message)}`)
+  } catch (err: any) {
+    if (err?.message?.includes('NEXT_REDIRECT')) throw err
+    redirect(`/login?error=${encodeURIComponent(err?.message || 'Authentication failed')}`)
   }
 
   revalidatePath('/', 'layout')
@@ -28,7 +38,12 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
-  const supabase = await createClient()
+  let supabase;
+  try {
+    supabase = await createClient()
+  } catch (err: any) {
+    redirect(`/login?error=${encodeURIComponent(err?.message || 'Database configuration error')}`)
+  }
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string
@@ -38,21 +53,26 @@ export async function signup(formData: FormData) {
     redirect('/login?error=password_too_short')
   }
 
-  const { data, error } = await supabase.auth.signUp({ email, password })
+  try {
+    const { data, error } = await supabase.auth.signUp({ email, password })
 
-  if (error) {
-    // Supabase returns this when the email is already registered
-    if (error.message.toLowerCase().includes('already registered') ||
-        error.message.toLowerCase().includes('user already registered')) {
+    if (error) {
+      // Supabase returns this when the email is already registered
+      if (error.message.toLowerCase().includes('already registered') ||
+          error.message.toLowerCase().includes('user already registered')) {
+        redirect('/login?error=email_exists')
+      }
+      redirect(`/login?error=${encodeURIComponent(error.message)}`)
+    }
+
+    // If user already exists, Supabase may NOT return an error but returns
+    // a user with identities=[] — check for that case too
+    if (data?.user && data?.user?.identities && data.user.identities.length === 0) {
       redirect('/login?error=email_exists')
     }
-    redirect(`/login?error=${encodeURIComponent(error.message)}`)
-  }
-
-  // If user already exists, Supabase may NOT return an error but returns
-  // a user with identities=[] — check for that case too
-  if (data.user && data.user.identities && data.user.identities.length === 0) {
-    redirect('/login?error=email_exists')
+  } catch (err: any) {
+    if (err?.message?.includes('NEXT_REDIRECT')) throw err
+    redirect(`/login?error=${encodeURIComponent(err?.message || 'Sign up failed')}`)
   }
 
   revalidatePath('/', 'layout')
