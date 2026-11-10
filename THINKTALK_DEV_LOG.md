@@ -150,6 +150,54 @@ Replaced Puter.js (client-side, browser global) with a proper **server-side arch
 
 ---
 
+### Stage 9: Modern Landing Page with Navbar & Hero (GatherWish Design Reference)
+
+Added a modern, friendly landing page at `/` inspired by the GatherWish UI reference provided by the user, tailored for Grade 7 English speaking practice.
+
+#### Components Built:
+1. **`LandingNavbar.tsx`**:
+   - Sticky header with glassmorphism blur (`backdrop-blur-md bg-white/80`).
+   - ThinkTalk brand mark with gradient microphone icon and live pulse indicator.
+   - Smooth anchor navigation links to `#features`, `#how-it-works`, `#topics`, and `#curriculum`.
+   - **Auth-Aware CTAs**: Automatically detects if the visitor is already authenticated via Supabase session. Displays "Dashboard" + "Start Practicing" for logged-in users, or "Sign In" + "Sign Up Free" + "Try Free Now" for guests.
+   - Responsive mobile drawer menu with clean toggle transitions.
+
+2. **`LandingHero.tsx`**:
+   - **Badge Pill**: Soft pink tag `✨ Grade 7 English Speech Companion` with sparkle icon.
+   - **Display Headline**: High-impact typography with the keyword **Confidence** highlighted in coral/rose with playful accent rays.
+   - **Curriculum Icons Row**: 5 circular colored badge categories directly matching Grade 7 topics:
+     - 🎓 School Life (Subjects & friends)
+     - 🍕 Favorites (Food, drinks & places)
+     - ⚽ Daily Routines (Hobbies & sports)
+     - 💖 Feelings (Share joy & empathy)
+     - ⭐ Free Speech (Open conversations)
+   - **Dual CTAs**: Vibrant rose gradient rounded pill button (`Start Practicing Free →`) and video/how-it-works button (`▶ Watch How It Works`).
+   - **Interactive Smartphone Mockup**:
+     - Realistic phone shell with Dynamic Island / status bar.
+     - Active practice session card with real-time waveform visualizer simulating AssemblyAI streaming.
+     - Live transcript bubble: *"My favorite food is homemade pasta because..."*
+     - Instant Gemini evaluation badge with 96/100 score and rubric breakdown.
+     - Whimsical floating stickers around the device: cute yellow envelope badge (`💌 New Prompt`), student achievement polaroid (`🌟 Alex`), streak gift box (`🎁 5-Day Streak!`), and score tag (`Score: 96 / 100`).
+
+3. **`LandingFeatures.tsx`**:
+   - 6 capability highlight cards: Real-Time Streaming (AssemblyAI v3), Intelligent Gemini Multi-Model AI Evaluation, Grade 7 Curriculum Alignment, Gamified Scores & Streaks, Stress-Free Private Retries, and Preserved Transcripts on network failures.
+
+4. **`LandingHowItWorks.tsx`**:
+   - 3-step illustrated visual walkthrough (Choose Prompt → Tap Mic & Speak → Get Instant AI Feedback).
+   - Bottom CTA banner with gradient styling encouraging immediate practice.
+
+5. **`LandingTopics.tsx`**:
+   - Interactive prompt preview tabs showing live Grade 7 question scaffolds (Food, Hobbies, Feelings, School Subjects) with sample recognized transcripts and AI scores.
+
+6. **`LandingFooter.tsx`**:
+   - Footer with navigation links, copyright, and technology attribution (AssemblyAI Streaming v3 & Google Gemini AI).
+
+7. **`page.tsx` Updates**:
+   - Replaced redirect to `/dashboard` with full landing page Server Component rendering.
+   - Performs graceful server-side auth check via Supabase SSR without throwing errors if offline.
+
+---
+
 ## Final Exercise Pool (10 total)
 
 | ID | Type | Question |
@@ -175,8 +223,8 @@ thinktalk/
 │   └── schema.sql                        ← Run this in Supabase SQL Editor
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx                      ← Redirects to /dashboard
-│   │   ├── layout.tsx                    ← Root layout (no Puter.js script)
+│   │   ├── page.tsx                      ← Landing Page (Navbar, Hero, Features, How It Works, Topics, Footer)
+│   │   ├── layout.tsx                    ← Root layout with ThinkTalk metadata
 │   │   ├── login/
 │   │   │   ├── page.tsx                  ← Login/Signup UI
 │   │   │   └── actions.ts                ← login(), signup(), signout()
@@ -186,14 +234,20 @@ thinktalk/
 │   │   │   └── page.tsx                  ← Random exercise + SpeechPractice
 │   │   ├── api/
 │   │   │   ├── assemblyai-token/
-│   │   │   │   └── route.ts             ← GET: issues short-lived AssemblyAI tokens
+│   │   │   │   └── route.ts             ← GET: issues short-lived AssemblyAI v3 tokens
 │   │   │   └── evaluate/
-│   │   │       └── route.ts             ← POST: Gemini 2.0 Flash AI evaluation
+│   │   │       └── route.ts             ← POST: Gemini AI evaluation with multi-model cascade
 │   │   └── actions/
 │   │       └── save-attempt.ts           ← Server Action: saves to Supabase
 │   ├── components/
+│   │   ├── LandingNavbar.tsx             ← Sticky navbar with auth-aware CTAs & mobile drawer
+│   │   ├── LandingHero.tsx               ← Hero section with smartphone mockup & floating badges
+│   │   ├── LandingFeatures.tsx           ← 6 core capability feature cards
+│   │   ├── LandingHowItWorks.tsx         ← 3-step student practice guide & CTA banner
+│   │   ├── LandingTopics.tsx             ← Interactive Grade 7 prompt showcase with sample scores
+│   │   ├── LandingFooter.tsx             ← Brand footer with navigation and tech attribution
 │   │   ├── SpeechPractice.tsx            ← Main recording + evaluation flow (AssemblyAI WebSocket)
-│   │   ├── MicrophoneButton.tsx          ← Blue mic button (idle state)
+│   │   ├── MicrophoneButton.tsx          ← Mic button (idle state)
 │   │   └── RecordingControls.tsx         ← Cancel | Recording... | Save
 │   ├── lib/
 │   │   ├── speech.ts                     ← Empty placeholder (STT handled in SpeechPractice)
