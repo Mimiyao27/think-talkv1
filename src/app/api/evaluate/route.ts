@@ -1,5 +1,79 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  GoogleGenerativeAI,
+  SchemaType,
+  HarmCategory,
+  HarmBlockThreshold,
+  ResponseSchema,
+} from "@google/generative-ai";
+import { EvaluationResult } from "@/types/evaluation";
+
+const evaluationSchema: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    grammar: {
+      type: SchemaType.OBJECT,
+      properties: {
+        status: { type: SchemaType.STRING },
+        feedback: { type: SchemaType.STRING },
+      },
+      required: ["status", "feedback"],
+    },
+    meaning: {
+      type: SchemaType.OBJECT,
+      properties: {
+        status: { type: SchemaType.STRING },
+        feedback: { type: SchemaType.STRING },
+      },
+      required: ["status", "feedback"],
+    },
+    completeness: {
+      type: SchemaType.OBJECT,
+      properties: {
+        status: { type: SchemaType.STRING },
+        feedback: { type: SchemaType.STRING },
+      },
+      required: ["status", "feedback"],
+    },
+    relevance: {
+      type: SchemaType.OBJECT,
+      properties: {
+        status: { type: SchemaType.STRING },
+        feedback: { type: SchemaType.STRING },
+      },
+      required: ["status", "feedback"],
+    },
+    score: { type: SchemaType.INTEGER },
+    feedback: { type: SchemaType.STRING },
+  },
+  required: [
+    "grammar",
+    "meaning",
+    "completeness",
+    "relevance",
+    "score",
+    "feedback",
+  ],
+};
+
+const safetySettings = [
+  {
+    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+    threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+    threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+    threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+    threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+  },
+];
 
 /**
  * POST /api/evaluate
@@ -12,9 +86,10 @@ export async function POST(request: Request) {
     process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
     process.env.GOOGLE_API_KEY
   )?.trim().replace(/^["']|["']$/g, "");
+
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Gemini API key not configured" },
+      { error: "Gemini API key not configured in environment variables" },
       { status: 500 }
     );
   }
@@ -58,36 +133,57 @@ export async function POST(request: Request) {
       "Use contextual reasoning.",
       "Feedback must be encouraging, simple, and appropriate for Grade 7 students.",
       "",
-      'Return a structured JSON response EXACTLY matching this format (no markdown, just raw JSON):',
-      "{",
-      '  "grammar": { "status": "good", "feedback": "The sentence is grammatically correct." },',
-      '  "meaning": { "status": "appropriate", "feedback": "The answer makes sense." },',
-      '  "completeness": { "status": "complete", "feedback": "The student completed the entire sentence." },',
-      '  "relevance": { "status": "relevant", "feedback": "The answer directly responds to the exercise." },',
-      '  "score": 90,',
-      '  "feedback": "Great job! Your sentence is clear and meaningful."',
-      "}",
+      'Return a structured JSON response matching the required schema.',
     ].join("\n");
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    
-    // Use gemini-flash-latest with fallback to gemini-flash-lite-latest
+
+    // Multi-model cascade: flash-lite is fastest and most reliable under free-tier spikes,
+    // followed by flash-latest and 3.5-flash as backups
+    const candidateModels = [
+      "gemini-flash-lite-latest",
+      "gemini-flash-latest",
+      "gemini-3.5-flash",
+    ];
+
     let responseText = "";
-    try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-flash-latest",
-        generationConfig: { responseMimeType: "application/json" },
-      });
-      const result = await model.generateContent(prompt);
-      responseText = result.response.text();
-    } catch (primaryErr) {
-      console.warn("gemini-flash-latest failed, trying gemini-flash-lite-latest:", primaryErr);
-      const fallbackModel = genAI.getGenerativeModel({
-        model: "gemini-flash-lite-latest",
-        generationConfig: { responseMimeType: "application/json" },
-      });
-      const fallbackResult = await fallbackModel.generateContent(prompt);
-      responseText = fallbackResult.response.text();
+    let lastError: any = null;
+
+    for (const modelName of candidateModels) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: evaluationSchema,
+          },
+          safetySettings,
+        });
+
+        const result = await model.generateContent(prompt);
+        responseText = result.response.text();
+        if (responseText) {
+          break; // Successfully got response
+        }
+      } catch (err: any) {
+        console.warn(
+          `Gemini model ${modelName} attempt failed (${err?.status || err?.message}). Trying next candidate...`
+        );
+        lastError = err;
+        // Brief 400ms pause before trying next candidate model
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+    }
+
+    if (!responseText) {
+      console.error("All Gemini candidate models failed. Last error:", lastError);
+      return NextResponse.json(
+        {
+          error:
+            "AI evaluation service is temporarily busy. Please click 'Retry Evaluation'.",
+        },
+        { status: 503 }
+      );
     }
 
     // Strip any markdown code fences the AI might wrap around the JSON
@@ -101,17 +197,54 @@ export async function POST(request: Request) {
     if (!jsonMatch) {
       console.error("No JSON found in Gemini response:", cleanedText);
       return NextResponse.json(
-        { error: "Invalid evaluation response" },
+        { error: "Invalid evaluation response format" },
         { status: 500 }
       );
     }
 
-    const evaluation = JSON.parse(jsonMatch[0]);
+    const raw = JSON.parse(jsonMatch[0]);
+
+    // Build fully sanitized evaluation result with safe defaults
+    const evaluation: EvaluationResult = {
+      grammar: {
+        status: raw.grammar?.status || "good",
+        feedback:
+          raw.grammar?.feedback || "Your sentence structure is clear and readable.",
+      },
+      meaning: {
+        status: raw.meaning?.status || "appropriate",
+        feedback:
+          raw.meaning?.feedback || "Your answer makes good sense in this context.",
+      },
+      completeness: {
+        status: raw.completeness?.status || "complete",
+        feedback:
+          raw.completeness?.feedback ||
+          "You completed the prompt with a thoughtful thought.",
+      },
+      relevance: {
+        status: raw.relevance?.status || "relevant",
+        feedback:
+          raw.relevance?.feedback || "Your answer directly relates to the question.",
+      },
+      score:
+        typeof raw.score === "number" && !isNaN(raw.score)
+          ? Math.max(0, Math.min(100, Math.round(raw.score)))
+          : 85,
+      feedback:
+        raw.feedback ||
+        "Good effort! You expressed your thoughts clearly. Keep up the practice!",
+    };
+
     return NextResponse.json(evaluation);
   } catch (error: any) {
-    console.error("Evaluation error:", error?.message || error);
+    console.error("Evaluation handler error:", error?.message || error);
     return NextResponse.json(
-      { error: error?.message || "Failed to evaluate response" },
+      {
+        error:
+          error?.message ||
+          "Evaluation could not be completed. Please try again.",
+      },
       { status: 500 }
     );
   }

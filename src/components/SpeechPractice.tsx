@@ -220,6 +220,29 @@ export default function SpeechPractice({ exercise }: SpeechPracticeProps) {
       setRecordingState("result");
     } catch (err: any) {
       console.error(err);
+      setTranscript(finalText); // Keep transcript preserved in state so user doesn't lose speech
+      setError(err.message || "Something went wrong. Please try again.");
+      setRecordingState("idle");
+    }
+  };
+
+  const handleRetryEvaluation = async () => {
+    const textToEvaluate = transcript || finalTranscriptRef.current.trim();
+    if (!textToEvaluate) return;
+
+    setError(null);
+    setRecordingState("processing");
+
+    try {
+      const evalResult = await evaluateResponse(exercise, textToEvaluate);
+      setEvaluation(evalResult);
+      setTranscript(textToEvaluate);
+
+      await saveAttemptToDatabase(exercise, textToEvaluate, evalResult);
+
+      setRecordingState("result");
+    } catch (err: any) {
+      console.error(err);
       setError(err.message || "Something went wrong. Please try again.");
       setRecordingState("idle");
     }
@@ -274,8 +297,16 @@ export default function SpeechPractice({ exercise }: SpeechPracticeProps) {
       )}
 
       {error && (
-        <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-lg text-center w-full">
-          {error}
+        <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-xl text-center w-full border border-red-200 flex flex-col items-center gap-2">
+          <p className="font-medium text-sm">{error}</p>
+          {transcript && recordingState === "idle" && (
+            <button
+              onClick={handleRetryEvaluation}
+              className="mt-1 px-5 py-2 bg-black text-white hover:bg-gray-800 rounded-full font-bold text-xs uppercase tracking-wider transition-all shadow-md transform hover:scale-105 active:scale-95"
+            >
+              🔄 Retry Evaluation
+            </button>
+          )}
         </div>
       )}
 

@@ -258,10 +258,21 @@ GEMINI_API_KEY=your_gemini_api_key
   2. `src/proxy.ts` (Next.js middleware) ran on every request and attempted `supabase.auth.getUser()` with `undefined` Supabase URL, causing Node.js native `fetch` to throw an unhandled `TypeError: fetch failed`.
 - **Fix:**
   1. Made `src/proxy.ts` defensive: skips auth refresh if env vars are missing and catches errors gracefully.
-  2. Made `src/utils/supabase/server.ts` and `client.ts` validate env vars with clear descriptive error messages.
+  2. Made `src/utils/supabase/server.ts` and `client.ts` validate env vars with clear descriptive error messages and sanitize quotes/trailing slashes.
   3. Added try/catch guards to Server Actions (`login`, `signup`, `saveAttemptToDatabase`) and protected routes (`/dashboard`, `/practice`).
   4. Added `.env.example` to the repository.
   5. Documented the required Vercel Environment Variables setup.
+
+### Intermittent Gemini 503 Spike & Evaluation Resilience Fix (Stage 8)
+- **Problem:** Students occasionally saw *"We couldn't evaluate your answer right now. Your transcript has been preserved. Please try again later."* after clicking Save.
+- **Root Cause:**
+  1. Google's free-tier `gemini-flash-latest` model intermittently experiences high-demand spikes (`503 Service Unavailable`).
+  2. If the request failed, `evaluateResponse()` swallowed the specific server error and threw a generic failure message.
+  3. The student's recorded transcript was reset to idle without an in-place retry option, forcing the user to speak again.
+- **Fix:**
+  1. **Multi-Model Cascade with Strict Schema:** Updated `POST /api/evaluate` to try `gemini-flash-lite-latest` first (ultrafast ~1s response, highly available), cascading to `gemini-flash-latest` and `gemini-3.5-flash` with brief backoff.
+  2. **Strict Schema & Safety Settings:** Configured `responseSchema` via `SchemaType.OBJECT` to guarantee all 6 evaluation fields are returned, plus adjusted safety thresholds to avoid false-positive blocks on student answers.
+  3. **Preserved Transcript & In-Place Retry:** Preserved the student's transcript in state and added a `"🔄 Retry Evaluation"` button in `SpeechPractice.tsx` so students can re-trigger evaluation with a single click without having to re-record their speech.
 
 ---
 

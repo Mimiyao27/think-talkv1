@@ -29,10 +29,11 @@ export async function evaluateResponse(
 
     const evaluation = (await response.json()) as EvaluationResult;
     return evaluation;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Evaluation error:", error);
     throw new Error(
-      "We couldn't evaluate your answer right now. Your transcript has been preserved. Please try again later."
+      error?.message ||
+        "We couldn't evaluate your answer right now. Your transcript has been preserved. Please try again."
     );
   }
 }
