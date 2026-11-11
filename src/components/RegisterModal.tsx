@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -17,6 +18,7 @@ export default function RegisterModal({
   initialMode = "register",
 }: RegisterModalProps) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<"register" | "login">(initialMode);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -27,6 +29,11 @@ export default function RegisterModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Client-side mount flag for createPortal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Sync mode when initialMode changes or modal opens
   useEffect(() => {
     if (isOpen) {
@@ -35,6 +42,17 @@ export default function RegisterModal({
       setSuccessMsg(null);
     }
   }, [isOpen, initialMode]);
+
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
 
   // Handle escape key
   useEffect(() => {
@@ -47,7 +65,8 @@ export default function RegisterModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  // Don't render until mounted on client and isOpen is true
+  if (!isOpen || !mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,16 +118,16 @@ export default function RegisterModal({
           return;
         }
 
-        // Check if email confirmation is required or auto-confirmed
+        // Check if session exists or email confirmation required
         if (data?.session) {
           setSuccessMsg("Account registered successfully! Redirecting...");
           setTimeout(() => {
             onClose();
             router.push("/dashboard");
             router.refresh();
-          }, 800);
+          }, 600);
         } else {
-          setSuccessMsg("Registration successful! Check your email to confirm your account, or log in.");
+          setSuccessMsg("Registration successful! Check your email to confirm, or log in.");
           setTimeout(() => {
             setMode("login");
             setIsLoading(false);
@@ -141,7 +160,7 @@ export default function RegisterModal({
           onClose();
           router.push("/dashboard");
           router.refresh();
-        }, 600);
+        }, 500);
       }
     } catch (err: any) {
       setErrorMsg(err?.message || "An unexpected error occurred. Please try again.");
@@ -173,28 +192,80 @@ export default function RegisterModal({
     }
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 99999,
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "16px",
+        overflowY: "auto",
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
       }}
     >
-      <div className="relative w-full max-w-[340px] sm:max-w-[370px] bg-white rounded-[2.8rem] border-[3px] border-black p-6 sm:p-8 shadow-2xl flex flex-col my-auto animate-in fade-in zoom-in-95 duration-150">
-        
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: "360px",
+          backgroundColor: "#ffffff",
+          borderRadius: "44px",
+          border: "3px solid #000000",
+          padding: "28px 24px",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
+          display: "flex",
+          flexDirection: "column",
+          margin: "auto",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-6 text-slate-400 hover:text-black p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+          style={{
+            position: "absolute",
+            top: "20px",
+            right: "20px",
+            color: "#64748b",
+            padding: "6px",
+            borderRadius: "9999px",
+            cursor: "pointer",
+            background: "none",
+            border: "none",
+          }}
           aria-label="Close dialog"
         >
           <X className="w-5 h-5 stroke-[2.5]" />
         </button>
 
         {/* Title */}
-        <h2 className="text-2xl font-black text-center text-black mb-6 tracking-tight">
-          {mode === "register" ? "Register Account" : "Welcome Back"}
+        <h2
+          id="modal-title"
+          style={{
+            fontSize: "24px",
+            fontWeight: 900,
+            textAlign: "center",
+            color: "#000000",
+            marginBottom: "20px",
+            letterSpacing: "-0.025em",
+          }}
+        >
+          {mode === "register" ? "Register Account" : "Log In"}
         </h2>
 
         {/* Feedback Messages */}
@@ -213,12 +284,12 @@ export default function RegisterModal({
         )}
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex flex-col">
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column" }}>
           {mode === "register" ? (
             <>
               {/* Firstname */}
-              <div className="mb-3">
-                <label className="block text-sm font-bold text-black mb-1 ml-1">
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", color: "#000000", marginBottom: "4px", marginLeft: "4px" }}>
                   Firstname
                 </label>
                 <input
@@ -226,14 +297,25 @@ export default function RegisterModal({
                   required
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full bg-[#c8d1d9] text-slate-900 font-medium px-4 py-2.5 rounded-full border-none outline-none focus:ring-2 focus:ring-slate-400 text-sm transition-all"
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#cbd5e1",
+                    color: "#0f172a",
+                    fontWeight: 500,
+                    padding: "10px 16px",
+                    borderRadius: "9999px",
+                    border: "none",
+                    outline: "none",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
                   placeholder=""
                 />
               </div>
 
               {/* Lastname */}
-              <div className="mb-3">
-                <label className="block text-sm font-bold text-black mb-1 ml-1">
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", color: "#000000", marginBottom: "4px", marginLeft: "4px" }}>
                   Lastname
                 </label>
                 <input
@@ -241,14 +323,25 @@ export default function RegisterModal({
                   required
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full bg-[#c8d1d9] text-slate-900 font-medium px-4 py-2.5 rounded-full border-none outline-none focus:ring-2 focus:ring-slate-400 text-sm transition-all"
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#cbd5e1",
+                    color: "#0f172a",
+                    fontWeight: 500,
+                    padding: "10px 16px",
+                    borderRadius: "9999px",
+                    border: "none",
+                    outline: "none",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
                   placeholder=""
                 />
               </div>
 
               {/* Email Address */}
-              <div className="mb-3">
-                <label className="block text-sm font-bold text-black mb-1 ml-1">
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", color: "#000000", marginBottom: "4px", marginLeft: "4px" }}>
                   Email Address
                 </label>
                 <input
@@ -256,14 +349,25 @@ export default function RegisterModal({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#c8d1d9] text-slate-900 font-medium px-4 py-2.5 rounded-full border-none outline-none focus:ring-2 focus:ring-slate-400 text-sm transition-all"
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#cbd5e1",
+                    color: "#0f172a",
+                    fontWeight: 500,
+                    padding: "10px 16px",
+                    borderRadius: "9999px",
+                    border: "none",
+                    outline: "none",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
                   placeholder=""
                 />
               </div>
 
               {/* Password */}
-              <div className="mb-3">
-                <label className="block text-sm font-bold text-black mb-1 ml-1">
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", color: "#000000", marginBottom: "4px", marginLeft: "4px" }}>
                   Password
                 </label>
                 <input
@@ -272,14 +376,25 @@ export default function RegisterModal({
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#c8d1d9] text-slate-900 font-medium px-4 py-2.5 rounded-full border-none outline-none focus:ring-2 focus:ring-slate-400 text-sm transition-all"
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#cbd5e1",
+                    color: "#0f172a",
+                    fontWeight: 500,
+                    padding: "10px 16px",
+                    borderRadius: "9999px",
+                    border: "none",
+                    outline: "none",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
                   placeholder=""
                 />
               </div>
 
               {/* Confirm Password */}
-              <div className="mb-5">
-                <label className="block text-sm font-bold text-black mb-1 ml-1">
+              <div style={{ marginBottom: "18px" }}>
+                <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", color: "#000000", marginBottom: "4px", marginLeft: "4px" }}>
                   Confirm Password
                 </label>
                 <input
@@ -288,7 +403,18 @@ export default function RegisterModal({
                   minLength={6}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-[#c8d1d9] text-slate-900 font-medium px-4 py-2.5 rounded-full border-none outline-none focus:ring-2 focus:ring-slate-400 text-sm transition-all"
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#cbd5e1",
+                    color: "#0f172a",
+                    fontWeight: 500,
+                    padding: "10px 16px",
+                    borderRadius: "9999px",
+                    border: "none",
+                    outline: "none",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
                   placeholder=""
                 />
               </div>
@@ -296,8 +422,8 @@ export default function RegisterModal({
           ) : (
             <>
               {/* Login Email */}
-              <div className="mb-3">
-                <label className="block text-sm font-bold text-black mb-1 ml-1">
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", color: "#000000", marginBottom: "4px", marginLeft: "4px" }}>
                   Email Address
                 </label>
                 <input
@@ -305,14 +431,25 @@ export default function RegisterModal({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#c8d1d9] text-slate-900 font-medium px-4 py-2.5 rounded-full border-none outline-none focus:ring-2 focus:ring-slate-400 text-sm transition-all"
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#cbd5e1",
+                    color: "#0f172a",
+                    fontWeight: 500,
+                    padding: "10px 16px",
+                    borderRadius: "9999px",
+                    border: "none",
+                    outline: "none",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
                   placeholder=""
                 />
               </div>
 
               {/* Login Password */}
-              <div className="mb-5">
-                <label className="block text-sm font-bold text-black mb-1 ml-1">
+              <div style={{ marginBottom: "18px" }}>
+                <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", color: "#000000", marginBottom: "4px", marginLeft: "4px" }}>
                   Password
                 </label>
                 <input
@@ -320,18 +457,46 @@ export default function RegisterModal({
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#c8d1d9] text-slate-900 font-medium px-4 py-2.5 rounded-full border-none outline-none focus:ring-2 focus:ring-slate-400 text-sm transition-all"
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#cbd5e1",
+                    color: "#0f172a",
+                    fontWeight: 500,
+                    padding: "10px 16px",
+                    borderRadius: "9999px",
+                    border: "none",
+                    outline: "none",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
                   placeholder=""
                 />
               </div>
             </>
           )}
 
-          {/* Primary Action Button */}
+          {/* Primary Action Button (Matches Wireframe pill) */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-[#c8d1d9] hover:bg-[#b5c0ca] active:scale-[0.98] text-slate-900 font-black py-3 rounded-full text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-60"
+            style={{
+              width: "100%",
+              backgroundColor: "#cbd5e1",
+              color: "#0f172a",
+              fontWeight: 900,
+              padding: "12px",
+              borderRadius: "9999px",
+              fontSize: "14px",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              border: "none",
+              cursor: isLoading ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              boxSizing: "border-box",
+            }}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-slate-800" />
@@ -343,19 +508,43 @@ export default function RegisterModal({
           </button>
 
           {/* OR Divider */}
-          <div className="text-center font-black text-xs text-slate-900 my-2.5 uppercase tracking-wide">
+          <div
+            style={{
+              textAlign: "center",
+              fontWeight: 900,
+              fontSize: "12px",
+              color: "#0f172a",
+              margin: "12px 0",
+              textTransform: "uppercase",
+            }}
+          >
             OR
           </div>
 
-          {/* Continue with Google */}
+          {/* Continue with Google (Matches Wireframe pill) */}
           <button
             type="button"
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full bg-[#c8d1d9] hover:bg-[#b5c0ca] active:scale-[0.98] text-slate-900 font-bold py-2.5 rounded-full text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-60"
+            style={{
+              width: "100%",
+              backgroundColor: "#cbd5e1",
+              color: "#0f172a",
+              fontWeight: 700,
+              padding: "10px",
+              borderRadius: "9999px",
+              fontSize: "14px",
+              border: "none",
+              cursor: isLoading ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              boxSizing: "border-box",
+            }}
           >
             {/* Google G Icon */}
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
+            <svg style={{ width: "16px", height: "16px" }} viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -378,7 +567,7 @@ export default function RegisterModal({
         </form>
 
         {/* Mode Toggle Footer */}
-        <div className="mt-4 text-center text-xs text-slate-600">
+        <div style={{ marginTop: "16px", textAlign: "center", fontSize: "12px", color: "#475569" }}>
           {mode === "register" ? (
             <p>
               Already have an account?{" "}
@@ -389,7 +578,15 @@ export default function RegisterModal({
                   setErrorMsg(null);
                   setSuccessMsg(null);
                 }}
-                className="font-bold text-black underline hover:text-slate-700 cursor-pointer"
+                style={{
+                  fontWeight: "bold",
+                  color: "#000000",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                }}
               >
                 Log In
               </button>
@@ -404,16 +601,24 @@ export default function RegisterModal({
                   setErrorMsg(null);
                   setSuccessMsg(null);
                 }}
-                className="font-bold text-black underline hover:text-slate-700 cursor-pointer"
+                style={{
+                  fontWeight: "bold",
+                  color: "#000000",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                }}
               >
                 Register Account
               </button>
             </p>
           )}
         </div>
-
       </div>
     </div>
   );
-}
 
+  return createPortal(modalContent, document.body);
+}
