@@ -243,6 +243,28 @@ Added a popup registration modal designed exactly after the user's wireframe ref
 
 ---
 
+### Stage 11: Replaced Old Login Page with New Wireframe Design
+
+Completely removed the legacy `#efebc4` yellow login page and replaced it with a dedicated full-page authentication experience matching the user's wireframe reference image (`media_1794378434631_dfe6fae9.png`).
+
+#### What Changed:
+1. **Removed Legacy UI**:
+   - Eliminated the `#efebc4` mustard background, old square card, red-700 title, and standard HTML form buttons.
+2. **`NewAuthForm.tsx` Component**:
+   - Clean, rounded wireframe phone container (`border: 3px solid #000`, `border-radius: 44px`, white card with shadow).
+   - Interactive top tab bar to seamlessly switch between **Log In** and **Register Account** without page reloads.
+   - Distinct smooth pill inputs (`#cbd5e1` background) for:
+     - Register: Firstname, Lastname, Email Address, Password, Confirm Password
+     - Log In: Email Address, Password
+   - Grey pill submit button (**LOG IN** / **REGISTER**) with loading spinner.
+   - **OR** divider and **Continue with Google** OAuth pill button.
+   - "Back to Home" navigation link and mode switch link.
+3. **Updated `src/app/login/page.tsx`**:
+   - Replaced page background with a soft, warm gradient (`bg-gradient-to-b from-[#fffaf6] via-[#fffdfa] to-[#fbf7f4]`) aligned with the landing page design.
+   - Supports URL search params (`?mode=register` or `?mode=login`) and error messaging.
+
+---
+
 ## Final Exercise Pool (10 total)
 
 | ID | Type | Question |
@@ -288,6 +310,7 @@ thinktalk/
 │   │   └── actions/
 │   │       └── save-attempt.ts           ← Server Action: saves to Supabase
 │   ├── components/
+│   │   ├── NewAuthForm.tsx               ← Wireframe login/register form card for /login
 │   │   ├── RegisterModal.tsx             ← Wireframe "Register Account" popup modal
 │   │   ├── RegisterModalTrigger.tsx      ← Reusable button trigger for RegisterModal
 │   │   ├── DashboardHeader.tsx           ← Interactive dashboard header with "Sign Up" popup
