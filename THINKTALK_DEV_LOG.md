@@ -237,6 +237,10 @@ Added a popup registration modal designed exactly after the user's wireframe ref
    - Connected "Sign up" button on `/login` to open the modal.
    - Extended `src/app/login/actions.ts` to persist `first_name` and `last_name` into Supabase user metadata.
 
+#### Visibility & Stacking Context Fix
+- **Problem**: When clicking "Sign Up", the popup was not visible because the modal was being rendered inside parent DOM containers (including within a `<form>` on `/login` and within a restricted width container on `/dashboard`), causing stacking context clipping and invalid DOM nesting.
+- **Fix**: Upgraded `RegisterModal.tsx` to use React's `createPortal(modalContent, document.body)` with client mount hydration guard, `z-index: 99999`, robust viewport fixed positioning, body scroll lock while open, and `e.stopPropagation()` on the modal dialog card to prevent accidental dismissal.
+
 ---
 
 ## Final Exercise Pool (10 total)
