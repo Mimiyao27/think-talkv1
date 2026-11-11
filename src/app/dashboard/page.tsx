@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { signout } from "../login/actions";
 
+import DashboardHeader from "@/components/DashboardHeader";
+
 export default async function DashboardPage() {
   let user = null;
   let supabase = null;
@@ -70,14 +72,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 sm:p-12">
       <div className="max-w-4xl mx-auto">
-        <header className="flex justify-between items-center mb-12">
-          <h1 className="text-3xl font-black tracking-tight text-gray-900">ThinkTalk</h1>
-          <form>
-            <button formAction={signout} className="text-sm font-bold text-gray-500 hover:text-black uppercase tracking-wider transition-colors">
-              Sign Out
-            </button>
-          </form>
-        </header>
+        <DashboardHeader userEmail={user?.email} signoutAction={signout} />
 
         <div className="bg-white rounded-3xl p-8 sm:p-12 border-[4px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl font-bold mb-2 text-gray-900">Welcome!</h2>

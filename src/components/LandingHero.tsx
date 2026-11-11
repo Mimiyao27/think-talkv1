@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import RegisterModal from "./RegisterModal";
 import {
   Sparkles,
   ArrowRight,
@@ -22,6 +23,7 @@ interface LandingHeroProps {
 }
 
 export default function LandingHero({ isLoggedIn = false }: LandingHeroProps) {
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const categories = [
     {
       icon: GraduationCap,
@@ -135,14 +137,26 @@ export default function LandingHero({ isLoggedIn = false }: LandingHeroProps) {
 
             {/* Call To Action Buttons */}
             <div className="flex flex-wrap items-center gap-4">
-              <Link
-                href={isLoggedIn ? "/practice" : "/login"}
-                className="px-7 py-4 text-base font-bold text-white bg-gradient-to-r from-rose-500 via-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 rounded-full shadow-xl shadow-rose-500/30 hover:shadow-rose-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-3 group"
-              >
-                <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span>{isLoggedIn ? "Start Speaking Practice" : "Start Practicing Free"}</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
+              {isLoggedIn ? (
+                <Link
+                  href="/practice"
+                  className="px-7 py-4 text-base font-bold text-white bg-gradient-to-r from-rose-500 via-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 rounded-full shadow-xl shadow-rose-500/30 hover:shadow-rose-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-3 group"
+                >
+                  <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span>Start Speaking Practice</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsRegisterOpen(true)}
+                  className="px-7 py-4 text-base font-bold text-white bg-gradient-to-r from-rose-500 via-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 rounded-full shadow-xl shadow-rose-500/30 hover:shadow-rose-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-3 group cursor-pointer"
+                >
+                  <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span>Start Practicing Free</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              )}
 
               <a
                 href="#how-it-works"
@@ -348,6 +362,13 @@ export default function LandingHero({ isLoggedIn = false }: LandingHeroProps) {
 
         </div>
       </div>
+
+      {/* Registration Modal Popup */}
+      <RegisterModal
+        isOpen={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
+        initialMode="register"
+      />
     </section>
   );
 }

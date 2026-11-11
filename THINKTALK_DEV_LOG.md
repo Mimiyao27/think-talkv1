@@ -198,6 +198,47 @@ Added a modern, friendly landing page at `/` inspired by the GatherWish UI refer
 
 ---
 
+### Stage 10: "Register Account" Wireframe Popup Modal & Dashboard Integration
+
+Added a popup registration modal designed exactly after the user's wireframe reference image (`media_1794378434631_dfe6fae9.png`).
+
+#### Components Built & Enhanced:
+1. **`src/components/RegisterModal.tsx`**:
+   - **Wireframe Design Fidelity**:
+     - Outer pill container: `rounded-[2.8rem] border-[3px] border-black bg-white shadow-2xl`
+     - Title: `Register Account` (black bold centered font)
+     - Fields:
+       - **Firstname** (smooth pill input with `#c8d1d9` background)
+       - **Lastname** (smooth pill input)
+       - **Email Address** (smooth pill input)
+       - **Password** (smooth pill input, min 6 characters)
+       - **Confirm Password** (smooth pill input with matching validation)
+     - Action Buttons:
+       - **REGISTER** button (grey pill matching design with loading spinner)
+       - **OR** divider
+       - **Continue with Google** button (with official Google 'G' icon & OAuth redirect)
+     - Mode toggle: Switch between "Register Account" and "Log In" right in the modal.
+     - Escape key & outside-click backdrop dismissal.
+
+2. **`src/components/DashboardHeader.tsx`**:
+   - Upgraded dashboard header to an interactive component.
+   - Features a **"Sign Up"** button directly on the dashboard that triggers the `RegisterModal` popup immediately on click.
+   - Features a **"Sign Out"** button with quick session invalidation.
+
+3. **`src/components/RegisterModalTrigger.tsx`**:
+   - Reusable client button wrapper to pop up the registration modal from anywhere in the application.
+
+4. **`src/app/auth/callback/route.ts`**:
+   - App Router OAuth callback handler for exchanging Supabase OAuth authorization codes for session tokens.
+
+5. **Landing Page & Login Page Integration**:
+   - Connected "Sign Up Free" and "Try Free Now" in `LandingNavbar.tsx` to open the modal.
+   - Connected "Start Practicing Free" in `LandingHero.tsx` to open the modal.
+   - Connected "Sign up" button on `/login` to open the modal.
+   - Extended `src/app/login/actions.ts` to persist `first_name` and `last_name` into Supabase user metadata.
+
+---
+
 ## Final Exercise Pool (10 total)
 
 | ID | Type | Question |
@@ -237,9 +278,15 @@ thinktalk/
 │   │   │   │   └── route.ts             ← GET: issues short-lived AssemblyAI v3 tokens
 │   │   │   └── evaluate/
 │   │   │       └── route.ts             ← POST: Gemini AI evaluation with multi-model cascade
+│   │   ├── auth/
+│   │   │   └── callback/
+│   │   │       └── route.ts             ← GET: OAuth callback handler
 │   │   └── actions/
 │   │       └── save-attempt.ts           ← Server Action: saves to Supabase
 │   ├── components/
+│   │   ├── RegisterModal.tsx             ← Wireframe "Register Account" popup modal
+│   │   ├── RegisterModalTrigger.tsx      ← Reusable button trigger for RegisterModal
+│   │   ├── DashboardHeader.tsx           ← Interactive dashboard header with "Sign Up" popup
 │   │   ├── LandingNavbar.tsx             ← Sticky navbar with auth-aware CTAs & mobile drawer
 │   │   ├── LandingHero.tsx               ← Hero section with smartphone mockup & floating badges
 │   │   ├── LandingFeatures.tsx           ← 6 core capability feature cards

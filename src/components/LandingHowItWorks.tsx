@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Mic, CheckCircle2, Sparkles, ArrowRight, BookOpen, BarChart3 } from "lucide-react";
+import RegisterModalTrigger from "./RegisterModalTrigger";
 
 interface LandingHowItWorksProps {
   isLoggedIn?: boolean;
@@ -104,13 +105,23 @@ export default function LandingHowItWorks({ isLoggedIn = false }: LandingHowItWo
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-            <Link
-              href={isLoggedIn ? "/practice" : "/login"}
-              className="w-full sm:w-auto px-8 py-4 bg-white text-rose-600 font-extrabold text-sm sm:text-base rounded-full shadow-lg hover:bg-rose-50 transition-all flex items-center justify-center gap-2 text-center"
-            >
-              <span>{isLoggedIn ? "Go to Practice Room" : "Start Practicing Now"}</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/practice"
+                className="w-full sm:w-auto px-8 py-4 bg-white text-rose-600 font-extrabold text-sm sm:text-base rounded-full shadow-lg hover:bg-rose-50 transition-all flex items-center justify-center gap-2 text-center"
+              >
+                <span>Go to Practice Room</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <RegisterModalTrigger
+                className="w-full sm:w-auto px-8 py-4 bg-white text-rose-600 font-extrabold text-sm sm:text-base rounded-full shadow-lg hover:bg-rose-50 transition-all flex items-center justify-center gap-2 text-center cursor-pointer"
+                initialMode="register"
+              >
+                <span>Start Practicing Now</span>
+                <ArrowRight className="w-4 h-4" />
+              </RegisterModalTrigger>
+            )}
           </div>
         </div>
 

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Mic, ArrowRight, Sparkles, BookOpen } from "lucide-react";
+import RegisterModalTrigger from "./RegisterModalTrigger";
 
 interface LandingTopicsProps {
   isLoggedIn?: boolean;
@@ -131,14 +132,25 @@ export default function LandingTopics({ isLoggedIn = false }: LandingTopicsProps
                 <BookOpen className="w-4 h-4 text-rose-500" />
                 10+ curated prompts available now
               </span>
-              <Link
-                href={isLoggedIn ? "/practice" : "/login"}
-                className="w-full sm:w-auto px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs sm:text-sm rounded-full shadow-md shadow-rose-500/20 hover:shadow-rose-500/30 transition-all flex items-center justify-center gap-2"
-              >
-                <Mic className="w-4 h-4" />
-                <span>Try This Speaking Exercise</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {isLoggedIn ? (
+                <Link
+                  href="/practice"
+                  className="w-full sm:w-auto px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs sm:text-sm rounded-full shadow-md shadow-rose-500/20 hover:shadow-rose-500/30 transition-all flex items-center justify-center gap-2"
+                >
+                  <Mic className="w-4 h-4" />
+                  <span>Try This Speaking Exercise</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <RegisterModalTrigger
+                  className="w-full sm:w-auto px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs sm:text-sm rounded-full shadow-md shadow-rose-500/20 hover:shadow-rose-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  initialMode="register"
+                >
+                  <Mic className="w-4 h-4" />
+                  <span>Try This Speaking Exercise</span>
+                  <ArrowRight className="w-4 h-4" />
+                </RegisterModalTrigger>
+              )}
             </div>
 
           </div>

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Mic, Menu, X, ArrowRight, Sparkles, UserCheck } from "lucide-react";
+import RegisterModal from "./RegisterModal";
 
 interface LandingNavbarProps {
   isLoggedIn?: boolean;
@@ -10,6 +11,8 @@ interface LandingNavbarProps {
 
 export default function LandingNavbar({ isLoggedIn = false }: LandingNavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"register" | "login">("register");
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-rose-100/60 transition-all">
@@ -81,26 +84,38 @@ export default function LandingNavbar({ isLoggedIn = false }: LandingNavbarProps
               </>
             ) : (
               <>
-                <Link
-                  href="/login"
-                  className="px-4 py-2 text-sm font-bold text-slate-700 hover:text-rose-600 transition-colors"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthModalMode("login");
+                    setAuthModalOpen(true);
+                  }}
+                  className="px-4 py-2 text-sm font-bold text-slate-700 hover:text-rose-600 transition-colors cursor-pointer"
                 >
                   Sign In
-                </Link>
-                <Link
-                  href="/login"
-                  className="px-4 py-2 text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100/80 border border-rose-200 rounded-full transition-all"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthModalMode("register");
+                    setAuthModalOpen(true);
+                  }}
+                  className="px-4 py-2 text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100/80 border border-rose-200 rounded-full transition-all cursor-pointer shadow-xs"
                 >
                   Sign Up Free
-                </Link>
-                <Link
-                  href="/login"
-                  className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-rose-500 via-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 rounded-full shadow-lg shadow-rose-500/25 hover:shadow-rose-500/35 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthModalMode("register");
+                    setAuthModalOpen(true);
+                  }}
+                  className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-rose-500 via-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 rounded-full shadow-lg shadow-rose-500/25 hover:shadow-rose-500/35 hover:-translate-y-0.5 transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4" />
                   Try Free Now
                   <ArrowRight className="w-4 h-4" />
-                </Link>
+                </button>
               </>
             )}
           </div>
@@ -171,25 +186,40 @@ export default function LandingNavbar({ isLoggedIn = false }: LandingNavbarProps
               </>
             ) : (
               <>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-2.5 text-sm font-bold text-slate-700 border border-slate-200 rounded-full"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setAuthModalMode("login");
+                    setAuthModalOpen(true);
+                  }}
+                  className="w-full text-center py-2.5 text-sm font-bold text-slate-700 border border-slate-200 rounded-full cursor-pointer"
                 >
                   Sign In
-                </Link>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-3 text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 rounded-full shadow-md"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setAuthModalMode("register");
+                    setAuthModalOpen(true);
+                  }}
+                  className="w-full text-center py-3 text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 rounded-full shadow-md cursor-pointer"
                 >
                   Start Practicing Free →
-                </Link>
+                </button>
               </>
             )}
           </div>
         </div>
       )}
+
+      {/* Registration / Log In Popup Modal */}
+      <RegisterModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode={authModalMode}
+      />
     </header>
   );
 }

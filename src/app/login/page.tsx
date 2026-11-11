@@ -1,4 +1,5 @@
-import { login, signup } from './actions'
+import { login } from './actions'
+import RegisterModalTrigger from '@/components/RegisterModalTrigger'
 
 // Error messages map — friendly text for each error code
 const ERROR_MESSAGES: Record<string, { text: string; type: 'error' | 'warning' }> = {
@@ -85,16 +86,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <button
               formAction={login}
-              className="flex-1 bg-black text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition-colors uppercase tracking-wider text-sm shadow-md"
+              className="flex-1 bg-black text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition-colors uppercase tracking-wider text-sm shadow-md cursor-pointer"
             >
               Log in
             </button>
-            <button
-              formAction={signup}
-              className="flex-1 bg-white text-black font-bold py-3 rounded-xl border-2 border-black hover:bg-gray-100 transition-colors uppercase tracking-wider text-sm shadow-sm"
-            >
-              Sign up
-            </button>
+            <RegisterModalTrigger
+              label="Sign up"
+              initialMode="register"
+              className="flex-1 bg-white text-black font-bold py-3 rounded-xl border-2 border-black hover:bg-gray-100 transition-colors uppercase tracking-wider text-sm shadow-sm cursor-pointer text-center"
+            />
           </div>
         </form>
       </div>
