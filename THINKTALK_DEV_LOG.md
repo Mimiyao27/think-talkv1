@@ -265,6 +265,33 @@ Completely removed the legacy `#efebc4` yellow login page and replaced it with a
 
 ---
 
+### Stage 12: Hero Section Right Column Redesign (Clean Glassmorphic Cards)
+
+Replaced the phone mockup in `LandingHero.tsx` with a clean, layered 3D glassmorphic cards composition:
+
+#### New Visual Composition:
+1. **Anchor Card (Center Practice Session Widget)**:
+   - Frosted translucent card (`bg-white/90 backdrop-blur-xl rounded-[2.5rem] border-2 border-white/80 shadow-2xl`).
+   - ThinkTalk Live practice header with live recording indicator (`REC 00:28`).
+   - Prompt #001 (Food & Favorites) with guided scaffold sentence starter.
+   - Real-time AssemblyAI streaming audio visualizer with multi-bar animated soundwave bars.
+   - Live speech transcript preview with highlighted keywords.
+   - Active microphone indicator (16 kHz PCM) with pulsing mic badge.
+2. **Floating Card 1 (Top-Right Gemini AI Score)**:
+   - Elevated floating glass card displaying `96 / 100` (Grade A+).
+   - Rubric progress bars: Grammar (95%) and Fluency (98%).
+   - Teacher feedback: *"Vivid vocabulary & natural flow!"*
+3. **Floating Card 2 (Top-Left Active Speaker Pill)**:
+   - Student badge: `Alex (Grade 7) • Speaking Now 🎙️` with pulsing broadcast dot.
+4. **Floating Card 3 (Bottom-Left Streak Badge)**:
+   - `5-Day Speaking Streak!` with flame icon and `Advanced Speaker` confidence badge.
+5. **Floating Card 4 (Bottom-Right Verified Pill)**:
+   - `Grammar: 95% Verified` with emerald checkmark icon.
+6. **Ambient Backlights**:
+   - Radiant ambient colorful backlights (rose, amber, and violet blurred radial gradients) enhancing the frosted glass effect.
+
+---
+
 ## Final Exercise Pool (10 total)
 
 | ID | Type | Question |
