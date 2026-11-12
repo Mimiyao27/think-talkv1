@@ -65,10 +65,10 @@ export default function LandingHero({ isLoggedIn = false }: LandingHeroProps) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          
+
           {/* Left Column: Hero Content */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
-            
+
             {/* Badge Pill */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-50 border border-rose-200/90 text-rose-600 text-xs sm:text-sm font-bold shadow-sm mb-6 hover:bg-rose-100/70 transition-colors">
               <Sparkles className="w-4 h-4 text-rose-500 fill-rose-400" />
@@ -99,9 +99,9 @@ export default function LandingHero({ isLoggedIn = false }: LandingHeroProps) {
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed mb-8 max-w-xl">
-              Turn hesitant answers into fluent speech. Practice speaking prompts with 
-              <strong className="font-semibold text-slate-800"> real-time streaming speech recognition</strong> and 
-              <strong className="font-semibold text-slate-800"> instant AI feedback</strong> on grammar, vocabulary, 
+              Turn hesitant answers into fluent speech. Practice speaking prompts with
+              <strong className="font-semibold text-slate-800"> real-time streaming speech recognition</strong> and
+              <strong className="font-semibold text-slate-800"> instant AI feedback</strong> on grammar, vocabulary,
               and clarity — tailored specifically for Grade 7 learners.
             </p>
 
@@ -165,7 +165,7 @@ export default function LandingHero({ isLoggedIn = false }: LandingHeroProps) {
                 <div className="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
                   <Play className="w-3.5 h-3.5 fill-rose-600 ml-0.5" />
                 </div>
-                <span>Watch How It Works</span>
+                <span> How It Works</span>
               </a>
             </div>
 
@@ -189,7 +189,7 @@ export default function LandingHero({ isLoggedIn = false }: LandingHeroProps) {
 
           {/* Right Column: Mobile Phone Mockup with Playful Floating Badges */}
           <div className="lg:col-span-5 relative flex justify-center items-center">
-            
+
             {/* Ambient Backlight Glow */}
             <div className="absolute inset-0 bg-gradient-to-tr from-rose-200/50 via-amber-200/40 to-pink-200/50 rounded-full blur-3xl scale-95 pointer-events-none" />
 
@@ -234,10 +234,10 @@ export default function LandingHero({ isLoggedIn = false }: LandingHeroProps) {
 
             {/* Phone Mockup Frame */}
             <div className="relative w-[310px] sm:w-[340px] bg-slate-900 p-3 rounded-[3rem] shadow-2xl border-4 border-slate-800">
-              
+
               {/* Screen Shell */}
               <div className="relative bg-white rounded-[2.4rem] overflow-hidden flex flex-col border border-slate-200">
-                
+
                 {/* Dynamic Island / Speaker Header */}
                 <div className="w-full bg-slate-100 pt-3 pb-2 px-6 flex items-center justify-between">
                   <span className="text-[11px] font-black text-slate-800">9:41</span>
@@ -264,7 +264,7 @@ export default function LandingHero({ isLoggedIn = false }: LandingHeroProps) {
 
                 {/* Mockup Body Content */}
                 <div className="p-4 space-y-3.5 bg-slate-50/60">
-                  
+
                   {/* Greeting Banner */}
                   <div className="flex items-center justify-between">
                     <div>
